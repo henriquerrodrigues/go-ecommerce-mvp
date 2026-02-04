@@ -126,8 +126,8 @@ func GetItemFromCart() gin.HandlerFunc {
 			return
 		}
 
-		filter_match := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "id", Value: usert_id}}}}
-		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$usercart"}}}}
+		filter_match := bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: usert_id}}}}
+		unwind := bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$usercart"}}}}
 		grouping := bson.D{
 			{Key: "$group", Value: bson.D{
 				{Key: "_id", Value: "$_id"},
@@ -143,12 +143,12 @@ func GetItemFromCart() gin.HandlerFunc {
 		if err = pointcursor.All(ctx, &listing); err != nil {
 			log.Println(err)
 			c.AbortWithStatus(http.StatusInternalServerError)
+			return
 		}
 		for _, json := range listing {
 			c.IndentedJSON(200, json["total"])
 			c.IndentedJSON(200, filledcart.UserCart)
 		}
-		ctx.Done()
 	}
 }
 
@@ -159,6 +159,7 @@ func (app *Application) BuyFromCart() gin.HandlerFunc {
 		if userQueryID == "" {
 			log.Panicln("user id is empty")
 			c.AbortWithError(http.StatusBadRequest, errors.New("User ID is empty"))
+			return
 		}
 
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
